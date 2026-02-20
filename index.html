@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Meal Planner</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Meal Planner</h1>
+        <div class="header-right">
+            <span id="sync-status" class="sync-status" style="display:none"></span>
+            <button id="settings-btn" class="icon-btn" aria-label="Settings">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 00-.48-.41h-3.84a.48.48 0 00-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87a.48.48 0 00.12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.26.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- Recipes View -->
+        <div id="recipes-view" class="view active">
+            <div class="view-header">
+                <div class="header-actions">
+                    <button id="add-recipe-btn" class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        New Recipe
+                    </button>
+                    <button id="import-recipe-btn" class="btn btn-secondary" title="Import Recipe">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <path d="M12 18v-6"></path>
+                            <path d="M9 15l3-3 3 3"></path>
+                        </svg>
+                        Import
+                    </button>
+                </div>
+                <div class="header-field">
+                    <div class="label-with-help">
+                        <label for="recipe-search">Search</label>
+                        <span class="help-icon" data-help="Type to filter recipes by name. Results update as you type.">?</span>
+                    </div>
+                    <input type="text" id="recipe-search" class="search-input" placeholder="Search recipes...">
+                </div>
+                <div class="header-field">
+                    <div class="label-with-help">
+                        <label for="recipe-filter">Category</label>
+                        <span class="help-icon" data-help="Filter recipes by meal type. Select 'All Categories' to show everything.">?</span>
+                    </div>
+                    <select id="recipe-filter" class="filter-select">
+                    <option value="">All Categories</option>
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="dinner">Dinner</option>
+                    <option value="snack">Snack</option>
+                    <option value="dessert">Dessert</option>
+                </select>
+                </div>
+            </div>
+            <div id="recipes-grid" class="recipes-grid"></div>
+        </div>
+
+        <!-- Planner View -->
+        <div id="planner-view" class="view">
+            <div class="planner-controls">
+                <div class="control-group">
+                    <div class="label-with-help">
+                        <label for="planner-start-date">Start Date</label>
+                        <span class="help-icon" data-help="Choose the first day of your meal plan. You can plan meals for multiple days starting from this date.">?</span>
+                    </div>
+                    <input type="date" id="planner-start-date" class="date-input">
+                </div>
+                <div class="control-group">
+                    <div class="label-with-help">
+                        <label for="planner-duration">Duration (Days): <span id="duration-value">7</span></label>
+                        <span class="help-icon" data-help="How many days to plan for. Slide to adjust between 1 and 14 days. A week (7 days) is typical.">?</span>
+                    </div>
+                    <input type="range" id="planner-duration" class="duration-slider" min="1" max="14" value="7">
+                </div>
+            </div>
+            <div id="planner-grid" class="planner-grid"></div>
+            <button id="generate-shopping-btn" class="btn btn-primary btn-full">Generate Shopping List</button>
+        </div>
+
+        <!-- Shopping View -->
+        <div id="shopping-view" class="view">
+            <div class="shopping-header">
+                <h2>Shopping List</h2>
+                <button id="clear-checked-btn" class="btn btn-secondary">Clear Checked</button>
+            </div>
+            <div id="shopping-list" class="shopping-list"></div>
+        </div>
+
+        <!-- Cook Plan View -->
+        <div id="cookplan-view" class="view">
+            <div class="cookplan-header">
+                <h2>Cooking Plan</h2>
+                <div class="cookplan-filters">
+                    <div class="filter-field">
+                        <div class="label-with-help">
+                            <label for="cookplan-category-filter">Category</label>
+                            <span class="help-icon" data-help="Filter planned meals by recipe category. Show all or specific meal types.">?</span>
+                        </div>
+                        <select id="cookplan-category-filter" class="filter-select">
+                            <option value="">All Categories</option>
+                            <option value="breakfast">Breakfast</option>
+                            <option value="lunch">Lunch</option>
+                            <option value="dinner">Dinner</option>
+                            <option value="snack">Snack</option>
+                            <option value="dessert">Dessert</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div id="cookplan-list" class="cookplan-list"></div>
+        </div>
+
+        <!-- Cook It All View -->
+        <div id="cookit-view" class="view">
+            <div class="cookit-header">
+                <h2>Cook It All</h2>
+                <p class="cookit-subtitle">Smart Batch Cooking Guide</p>
+                <button id="generate-guide-btn" class="btn btn-primary btn-full">Generate Cooking Guide</button>
+            </div>
+            <div id="recipe-selection" class="recipe-selection"></div>
+            <div id="cooking-guide" class="cooking-guide"></div>
+        </div>
+    </main>
+
+    <!-- Bottom Tab Bar -->
+    <nav class="tab-bar">
+        <button class="tab-btn active" data-view="recipes-view">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2m0 0h4v7a2 2 0 002 2h4a2 2 0 002-2V2M3 16h18v2a4 4 0 01-4 4H7a4 4 0 01-4-4v-2z"></path>
+            </svg>
+            <span>Recipes</span>
+        </button>
+        <button class="tab-btn" data-view="planner-view">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span>Planner</span>
+        </button>
+        <button class="tab-btn" data-view="shopping-view">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"></path>
+            </svg>
+            <span>Shop</span>
+        </button>
+        <button class="tab-btn" data-view="cookplan-view">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+            </svg>
+            <span>Plan</span>
+        </button>
+        <button class="tab-btn" data-view="cookit-view">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20M12 2c-1.657 0-3 1.343-3 3v3h6V5c0-1.657-1.343-3-3-3zM8 8v14M16 8v14M5 12h14M5 16h14"></path>
+            </svg>
+            <span>Cook</span>
+        </button>
+    </nav>
+
+    <!-- Recipe Modal (Add/Edit) -->
+    <div id="recipe-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="recipe-modal-title">Add Recipe</h2>
+                <button class="modal-close" data-modal="recipe-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="recipe-form">
+                    <input type="hidden" id="recipe-id">
+
+                    <div class="form-group">
+                        <div class="label-with-help">
+                            <label for="recipe-name">Recipe Name</label>
+                            <span class="help-icon" data-help="The name of your recipe. Make it descriptive and memorable. Example: Grandma's Chicken Soup">?</span>
+                        </div>
+                        <input type="text" id="recipe-name" placeholder="e.g., Grandma's Chicken Soup" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <div class="label-with-help">
+                                <label for="recipe-category">Category</label>
+                                <span class="help-icon" data-help="What type of meal is this? This helps organize your recipes and plan meals throughout the day.">?</span>
+                            </div>
+                            <select id="recipe-category" required>
+                                <option value="breakfast">Breakfast</option>
+                                <option value="lunch">Lunch</option>
+                                <option value="dinner">Dinner</option>
+                                <option value="snack">Snack</option>
+                                <option value="dessert">Dessert</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <div class="label-with-help">
+                                <label for="recipe-servings">Servings</label>
+                                <span class="help-icon" data-help="How many people does this recipe serve? Example: 4 for a family meal, 2 for a couple.">?</span>
+                            </div>
+                            <input type="number" id="recipe-servings" min="1" value="4" placeholder="e.g., 4" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="label-with-help">
+                            <label for="recipe-image">Recipe Image</label>
+                            <span class="help-icon" data-help="Upload a photo of your dish. This makes your recipe easier to recognize and more appealing to prepare.">?</span>
+                        </div>
+                        <input type="file" id="recipe-image" accept="image/*">
+                        <div id="image-preview" class="image-preview"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="button" id="ocr-btn" class="btn btn-secondary btn-full">Scan Recipe Image</button>
+                    </div>
+
+                    <div id="ocr-section" class="ocr-section" style="display: none;">
+                        <div class="form-group">
+                            <label>Extracted Text</label>
+                            <textarea id="ocr-text" rows="10"></textarea>
+                        </div>
+                        <button type="button" id="parse-ocr-btn" class="btn btn-secondary btn-full">Parse into Recipe</button>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="label-with-help">
+                            <label>Ingredients</label>
+                            <span class="help-icon" data-help="List all ingredients needed. Qty = amount (2, 1.5), Unit = measurement (cups, lbs, oz), Item = ingredient name, Category = where to find it in the store.">?</span>
+                        </div>
+                        <div id="ingredients-list"></div>
+                        <button type="button" id="add-ingredient-btn" class="btn btn-secondary">+ Add Ingredient</button>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="label-with-help">
+                            <label>Steps</label>
+                            <span class="help-icon" data-help="Cooking instructions in order. Each step should be a clear action. Example: Preheat oven to 375°F, Mix dry ingredients in a large bowl.">?</span>
+                        </div>
+                        <div id="steps-list"></div>
+                        <button type="button" id="add-step-btn" class="btn btn-secondary">+ Add Step</button>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary modal-close" data-modal="recipe-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Recipe</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recipe Detail Modal -->
+    <div id="recipe-detail-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="detail-recipe-name"></h2>
+                <button class="modal-close" data-modal="recipe-detail-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="recipe-detail-content"></div>
+                <div class="form-actions">
+                    <button id="edit-recipe-btn" class="btn btn-secondary">Edit</button>
+                    <button id="delete-recipe-btn" class="btn btn-danger">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recipe Picker Modal -->
+    <div id="recipe-picker-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Choose Recipe</h2>
+                <button class="modal-close" data-modal="recipe-picker-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <div class="label-with-help">
+                        <label for="picker-search">Search Recipes</label>
+                        <span class="help-icon" data-help="Type to filter recipes by name. Leave blank to see all available recipes.">?</span>
+                    </div>
+                    <input type="text" id="picker-search" class="search-input" placeholder="Search recipes...">
+                </div>
+                <div id="recipe-picker-list" class="recipe-picker-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="modal-close" data-modal="settings-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <div class="label-with-help">
+                        <label for="default-week-length">Default Week Length (days)</label>
+                        <span class="help-icon" data-help="Set the default number of days shown when you open the meal planner. You can always adjust this per session.">?</span>
+                    </div>
+                    <input type="number" id="default-week-length" min="1" max="14" value="7" placeholder="e.g., 7">
+                </div>
+
+                <div class="settings-section">
+                    <h3>Cloud Sync</h3>
+                    <p class="settings-hint">Sync recipes across devices using Firebase. Free for family use.</p>
+
+                    <div class="form-group">
+                        <label for="sync-enabled">
+                            <input type="checkbox" id="sync-enabled"> Enable Cloud Sync
+                        </label>
+                    </div>
+
+                    <div id="sync-settings-detail" style="display:none">
+                        <div class="form-group">
+                            <label for="sync-firebase-url">Firebase Database URL</label>
+                            <input type="text" id="sync-firebase-url" placeholder="https://your-project-default-rtdb.firebaseio.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sync-family-code">Family Code (optional)</label>
+                            <input type="text" id="sync-family-code" placeholder="e.g., smith-family">
+                            <span class="settings-hint">Separate data spaces within the same database</span>
+                        </div>
+
+                        <button id="sync-test-btn" class="btn btn-secondary btn-full">Test Connection</button>
+                        <div id="sync-test-result" class="loader-status" style="margin-top:8px"></div>
+
+                        <button id="sync-push-btn" class="btn btn-primary btn-full" style="margin-top:8px">Push Local Data to Cloud</button>
+                        <button id="sync-pull-btn" class="btn btn-secondary btn-full" style="margin-top:8px">Pull Cloud Data to Local</button>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>AI Recipe Import <span class="settings-optional-badge">Optional</span></h3>
+                    <p class="settings-hint">AI greatly improves accuracy for photos, handwritten recipes, and messy text. Without it, text-based recipes still work well using pattern matching.</p>
+                    <div class="form-group">
+                        <label for="ai-provider-select">AI Provider</label>
+                        <select id="ai-provider-select">
+                            <option value="anthropic">Anthropic (Claude)</option>
+                            <option value="openai">OpenAI (GPT)</option>
+                            <option value="openrouter">OpenRouter</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ai-api-key-input">API Key</label>
+                        <input type="password" id="ai-api-key-input" placeholder="sk-...">
+                    </div>
+                    <div class="form-group">
+                        <label for="ai-model-select">Model</label>
+                        <select id="ai-model-select">
+                            <option value="">(Default)</option>
+                        </select>
+                        <input type="text" id="ai-model-input" placeholder="Enter custom model name" style="display:none; margin-top:6px;">
+                        <span id="ai-model-hint" class="loader-hint"></span>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Data Management</h3>
+                    <div style="margin-bottom: 12px;">
+                        <div class="label-with-help">
+                            <label style="margin-bottom: 8px;">Export Data</label>
+                            <span class="help-icon" data-help="Download all your recipes, meal plans, and settings as a JSON file for backup or transfer to another device.">?</span>
+                        </div>
+                        <button id="export-data-btn" class="btn btn-secondary btn-full">Export Data as JSON</button>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <div class="label-with-help">
+                            <label style="margin-bottom: 8px;">Import Data</label>
+                            <span class="help-icon" data-help="Load recipes and meal plans from a previously exported JSON file. This will replace all current data.">?</span>
+                        </div>
+                        <button id="import-data-btn" class="btn btn-secondary btn-full">Import Data from JSON</button>
+                        <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                    </div>
+                    <div>
+                        <div class="label-with-help">
+                            <label style="margin-bottom: 8px;">Clear All Data</label>
+                            <span class="help-icon" data-help="Permanently delete all recipes, meal plans, and settings. This cannot be undone, so export first if you want to keep a backup.">?</span>
+                        </div>
+                        <button id="clear-data-btn" class="btn btn-danger btn-full">Clear All Data</button>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-primary modal-close" data-modal="settings-modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- In-App Confirm/Alert Modal -->
+    <div id="app-confirm-modal" class="modal-overlay" style="z-index: 300;">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-body" style="padding: 24px;">
+                <p id="app-confirm-message" style="margin-bottom: 20px; font-size: 15px; line-height: 1.5;"></p>
+                <div id="app-confirm-actions" class="form-actions"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="loading-spinner" style="display: none;">
+        <div class="spinner"></div>
+        <p>Reading recipe...</p>
+    </div>
+
+    <!-- Recipe Loader Modal -->
+    <div id="recipe-loader-modal" class="modal-overlay">
+        <div class="modal loader-modal">
+            <div class="modal-header">
+                <h2>Import Recipe</h2>
+                <button id="loader-close-btn" class="modal-close" data-modal="recipe-loader-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Drop Zone -->
+                <div id="loader-drop-zone" class="loader-drop-zone">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <p>Drop anything — photos, PDF, text, or a link</p>
+                    <span class="loader-drop-hint">or use the tabs below</span>
+                </div>
+
+                <!-- Tabs -->
+                <div class="loader-tabs">
+                    <button id="loader-tab-text" class="loader-tab active" data-tab="text">Text</button>
+                    <button id="loader-tab-image" class="loader-tab" data-tab="image">Image</button>
+                    <button id="loader-tab-url" class="loader-tab" data-tab="url">URL</button>
+                </div>
+
+                <!-- Text Tab -->
+                <div id="loader-content-text" class="loader-tab-content active" data-tab="text">
+                    <textarea id="loader-text-input" rows="8" placeholder="Paste recipe text here... blog posts, recipe cards, ingredients lists, anything!"></textarea>
+                </div>
+
+                <!-- Image Tab -->
+                <div id="loader-content-image" class="loader-tab-content" data-tab="image">
+                    <div id="loader-image-previews" class="loader-image-previews"></div>
+                    <button id="loader-add-images-btn" class="btn btn-secondary btn-full">
+                        + Add Images
+                    </button>
+                    <input type="file" id="loader-file-input" accept="image/*,.pdf" multiple style="display:none">
+                    <p class="loader-hint">Add one or more recipe photos — they'll be combined into one recipe. PDFs work too!</p>
+                </div>
+
+                <!-- URL Tab -->
+                <div id="loader-content-url" class="loader-tab-content" data-tab="url">
+                    <input type="text" id="loader-url-input" placeholder="https://www.allrecipes.com/recipe/...">
+                    <p class="loader-hint">Paste a URL from any recipe website and press Enter or click Extract</p>
+                </div>
+
+                <!-- Process Button -->
+                <button id="loader-process-btn" class="btn btn-primary btn-full loader-process-btn">
+                    &#10024; Extract Recipe
+                </button>
+
+                <!-- Status -->
+                <div id="loader-status" class="loader-status"></div>
+
+                <!-- Preview Area (hidden until extraction complete) -->
+                <div id="loader-preview" class="loader-preview" style="display:none"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script src="sync.js"></script>
+    <script src="recipe-loader.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
