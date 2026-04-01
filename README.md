@@ -95,3 +95,5 @@ The only external dependency is Tesseract.js (loaded via CDN) for OCR functional
 ## Privacy
 
 All data stays on your device. Nothing is sent to any server. Export your data regularly as a backup.
+
+Built by [Infinite Visions AI Agents](https://www.infinitevisionsaiagents.com) — we build AI systems that pay for themselves.
